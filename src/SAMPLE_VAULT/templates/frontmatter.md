@@ -1,13 +1,9 @@
 ---
-# 11ty frontmatter 
-title: 
-description: 
+# 11ty frontmatter
+title: ""
+description: ""
 # Shared frontmatter
-tags: 
-- "date:{{date:YYYY}}"
+tags: ["date:{{date:YYYY}}"]
 # Obsidian frontmatter 
-aliases:
-- "{{date:YYYYMMDDhhmmss}}"
+aliases: ["{{date:YYYYMMDDhhmmss}}"]
 ---
-# {{title}}
-

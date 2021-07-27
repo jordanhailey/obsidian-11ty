@@ -1,6 +1,6 @@
 ---
-# 11ty frontmatter 
-title: My Public Obsidian Vault
+# 11ty frontmatter
+title: A Sample Vault 
 description: Content from my obsidian vault
 pagination:
   size: 1
@@ -11,15 +11,14 @@ homepage:
 - "/"
 permalink: "{{home}}"
 layout: "base.html"
-# Shared frontmatter
+# Shared frontmatter 
 tags:
 - index
-- date_2021
+- date:2021
 # Obsidian frontmatter 
 aliases:
-- 20210726212953
-
+- "20210726212953"
 ---
-# {{title}}
+# A Sample Vault
 
 Welcome to my sample vault! ![[my desktop.png|Here's a picture of my desktop.]]
