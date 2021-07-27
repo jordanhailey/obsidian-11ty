@@ -10,5 +10,6 @@
 	<main id="main-content" tabindex="-1">
 		{{ content | markdownifyWikiLinks | safe }}
 	</main>
+	{% if site.github_repo.isPublic %}{% include 'partial/edit-this-page.html' %}{% endif %}
 </body>
 </html>
