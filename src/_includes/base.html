@@ -2,9 +2,13 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>{{title if title else "Notes"}}</title>
+	{%set pageTitle = title if title else page.fileSlug | replace('+',' ') %}
+	<title>{{site.title}}{{ " | "+pageTitle if pageTitle != site.title else ""}}</title>
+	<meta name="description" content="{{description if description else site.description}}">
 </head>
 <body>
-	{{ content | safe }}
+	<main id="main-content" tabindex="-1">
+		{{ content | markdownifyWikiLinks | safe }}
+	</main>
 </body>
 </html>

@@ -1,0 +1,8 @@
+{
+  "promptDelete": false,
+  "attachmentFolderPath": "attachments",
+  "alwaysUpdateLinks": true,
+  "showFrontmatter": true,
+  "fileSortOrder": "alphabeticalReverse",
+  "showUnsupportedFiles": false
+}
