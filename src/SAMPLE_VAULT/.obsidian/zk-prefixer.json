@@ -1,5 +1,5 @@
 {
   "folder": "/",
-  "template": "templates/frontmatter",
+  "template": "__templates/blog_frontmatter",
   "format": "YYYYMMDDHHmmss"
 }

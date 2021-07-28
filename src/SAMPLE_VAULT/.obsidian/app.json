@@ -1,8 +1,11 @@
 {
   "promptDelete": false,
-  "attachmentFolderPath": "attachments",
+  "attachmentFolderPath": "__assets",
   "alwaysUpdateLinks": true,
   "showFrontmatter": true,
   "fileSortOrder": "alphabeticalReverse",
-  "showUnsupportedFiles": false
+  "showUnsupportedFiles": false,
+  "newLinkFormat": "absolute",
+  "tabSize": 2,
+  "useTab": false
 }

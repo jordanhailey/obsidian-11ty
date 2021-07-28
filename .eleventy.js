@@ -1,9 +1,8 @@
 const fs = require('fs');
 require('dotenv').config();
 const {OBSIDIAN_VAULT_NAME,OBSIDIAN_CONFIG} = process.env
-
 let attachmentsDir = fs.readFileSync(process.cwd()+"/src/"+OBSIDIAN_VAULT_NAME+"/"+OBSIDIAN_CONFIG+"/app.json",'utf-8')
-if (attachmentsDir) attachmentsDir = JSON.parse(attachmentsDir)?.attachmentFolderPath || null;
+if (attachmentsDir) attachmentsDir = JSON.parse(attachmentsDir)?.attachmentFolderPath || "__assets";
 
 module.exports = (eleventyConfig) => {
 	eleventyConfig.setWatchThrottleWaitTime(1000); // in milliseconds
@@ -89,8 +88,18 @@ module.exports = (eleventyConfig) => {
 		})
 		let offset=0;
 		links?.forEach((link)=>{
-			const {href,text,matchIndex:idx,matchLength:ln,class:cl,type:t} = link;
-			let replacement	= `<a href="${t? '/attachments':''}/${t ? href : href.replace(/%20/g,'+')}" class="${cl}${t? ' '+t:''}">${text}</a>`;
+			let {href,text,matchIndex:idx,matchLength:ln,class:cl,type:t} = link;
+			if (/\/index$/.test(text)) {
+				text = text.substr(0,text.length-6);
+				href = href.substr(0,href.length-5);
+			}
+			if (text == "index" && href !== "index/") {
+				href = ""
+			}
+			let replacement = `<a href="${(t && !/^__assets\//.test(href)) ? '/__assets':''}/${t ? href : href.replace(/%20/g,'+')}" class="${cl}${t? ' '+t:''}">${text}</a>`;
+			if (href.includes("__") && !/^__assets/.test(href)) {
+				replacement = `<span class="private_content">[\[${text}]\]</span>`
+			}
 			content = content.substr(0,idx+offset)+replacement+content.substr(idx+ln+offset)
 			offset = ln > replacement.length ? offset + ln - replacement.length : offset + replacement.length - ln;
 		})
@@ -103,7 +112,7 @@ module.exports = (eleventyConfig) => {
 	*/
 	//eleventyConfig.setTemplateFormats(obsidianNonDefaultFiletypes);
 	if (attachmentsDir){
-		eleventyConfig.addPassthroughCopy({[`src/${OBSIDIAN_VAULT_NAME}/${attachmentsDir}`]:'/attachments'});
+		eleventyConfig.addPassthroughCopy({[`src/${OBSIDIAN_VAULT_NAME}/${attachmentsDir}`]:'/__assets'});
 	}
 
 	eleventyConfig.setBrowserSyncConfig({
