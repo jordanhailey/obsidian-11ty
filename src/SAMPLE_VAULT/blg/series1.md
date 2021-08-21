@@ -1,0 +1,1 @@
+This is a note with the same name as the folder, uh oh!

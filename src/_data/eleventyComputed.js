@@ -1,12 +1,21 @@
+const VAULT_NAME = process.env.OBSIDIAN_VAULT_NAME;
+const vaultNameRegExp = new RegExp(`^\/{0,1}${VAULT_NAME}\/`);
+const normalizeURL = (url) => {
+	if (/\.md$/.test(url)) {
+		url = url.substr(0,url.length-3);
+	}
+	if (url.substr(0,6) == "./src/") url = url.substr(6);
+	if (vaultNameRegExp.test(url)) url = url.substr(VAULT_NAME.length+1)
+	if (url.length < 2) return url;
+	url = url[url.length-1] == "/" ? url.substr(0,url.length-1) : url;
+	return url;
+}
+
 const setPermalink = (data) => {
 	let {permalink,page:{inputPath:path,filePathStem}} = data;
 	if (permalink) return permalink;
-	if (/\/index\.md$/.test(path)) {
-		filePathStem = filePathStem.substr(0,filePathStem.length-6)
-	}
-	let dataOut = `${filePathStem}/index.html`.replace(/ /g, "+");
-	let stripVaultName = new RegExp(`^\/${process.env.OBSIDIAN_VAULT_NAME}\/`)
-	if (stripVaultName.test(dataOut))	dataOut = dataOut.substr(process.env.OBSIDIAN_VAULT_NAME.length+2)
+	path = normalizeURL(path);
+	let dataOut = `${path}.html`.replace(/ /g, "+");
 	return dataOut
 }
 

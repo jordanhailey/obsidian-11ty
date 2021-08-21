@@ -8,8 +8,10 @@
 </head>
 <body>
 	<main id="main-content" tabindex="-1">
-		{{ content | markdownifyWikiLinks | safe }}
+		{% set regExp = r/__/ %}
+		{% if regExp.test(page.inputPath) == false %}{{ content | markdownifyWikiLinks | safe }}{% endif %}
 	</main>
+	<div data-permalink=""></div>
 	{% if site.github_repo.isPublic %}{% include 'partial/edit-this-page.html' %}{% endif %}
 </body>
 </html>

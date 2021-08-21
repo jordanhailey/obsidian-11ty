@@ -1,24 +1,38 @@
 ---
-# 11ty frontmatter
-title: A Sample Vault 
-description: Content from my obsidian vault
-pagination:
-  size: 1
-  alias: home
-  data: homepage
-homepage:
-- "/index/"
-- "/"
-permalink: "{{home}}"
-layout: "base.html"
-# Shared frontmatter 
-tags:
-- index
-- date:2021
-# Obsidian frontmatter 
-aliases:
-- "20210726212953"
+11ty: 
+  pageTitle: My vault
+  pageDescription: A sample obsidian vault, built with eleventy
 ---
 # A Sample Vault
 
-Welcome to my sample vault! ![[my desktop.png|Here's a picture of my desktop.]]
+Welcome to my sample vault!
+
+![[__assets/my desktop.png|A picture of my desktop]]
+
+[[index]]
+
+## Index pages
+At any directory level that you wish to have an index page (which ideally should be every directory), add a file named `index.md`.
+```
+[[blog/index]] => /blog/
+```
+
+
+[[blog/series1/post 1]]
+[[blog/series1/index]]
+
+
+[[blg/series1/index]]
+[[blg/series1]]
+
+
+[[blog/series2/index]]
+[[blog/series2/post 1]]
+
+[[series1/index]]
+[[series1]]
+
+## Hidden content
+Any files or folders begining with a double underscore `__` should not be built (unless specified in your page frontmatter by providing a permalink) thus these two list items should not navigate anywhere.
+- [[__templates/frontmatter]]
+- [hidden frontmatter](__templates/frontmatter)

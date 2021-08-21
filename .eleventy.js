@@ -1,4 +1,5 @@
 const fs = require('fs');
+const jsdom = require('jsdom');
 require('dotenv').config();
 const {OBSIDIAN_VAULT_NAME,OBSIDIAN_CONFIG} = process.env
 let attachmentsDir = fs.readFileSync(process.cwd()+"/src/"+OBSIDIAN_VAULT_NAME+"/"+OBSIDIAN_CONFIG+"/app.json",'utf-8')
@@ -11,100 +12,90 @@ module.exports = (eleventyConfig) => {
 	const stripLeadingAndTrailingSlashes = (url) => {
 		if (url.length < 2) return url
 		url = url[0]=="/" ? stripLeadingAndTrailingSlashes(url.substr(1)) : url;
-		url = url[url.length-1] == "/" ? url.substr(0,url.length-1) : url;
+		//url = url[url.length-1] == "/" ? url.substr(0,url.length-1) : url;
 		return url;
 	}
-	const alphaNumericSort = (arr = []) => {
-		const sorter = ([a], [b]) => {
-			 const isNumber = (v) => (+v).toString() === v;
-			 const aPart = a.match(/\d+|\D+/g);
-			 const bPart = b.match(/\d+|\D+/g);
-			 let i = 0; let len = Math.min(aPart.length, bPart.length);
-			 while (i < len && aPart[i] === bPart[i]) { i++; };
-					if (i === len) {
-						 return aPart.length - bPart.length;
-			 };
-			 if (isNumber(aPart[i]) && isNumber(bPart[i])) {
-					return aPart[i] - bPart[i];
-			 };
-			 return aPart[i].localeCompare(bPart[i]); 
-		};
-		return arr.sort(sorter);
-	};
 
-	eleventyConfig.addCollection("allRendered", function(collection) {
-    // get unsorted items
-		const allRenderedItems = collection.getAll();
-		const resolvedPermalinks = new Map();
-		allRenderedItems.forEach(item => {
-			let {url,fileSlug,filePathStem} = item;
-			url = stripLeadingAndTrailingSlashes(url);
-			filePathStem = stripLeadingAndTrailingSlashes(filePathStem);
-			let stripVaultName = new RegExp(`^${process.env.OBSIDIAN_VAULT_NAME}\/`)
-			if (stripVaultName.test(url))	url = url.substr(process.env.OBSIDIAN_VAULT_NAME.length+1)
-			if (stripVaultName.test(filePathStem))	filePathStem = filePathStem.substr(process.env.OBSIDIAN_VAULT_NAME.length+1)
-			let matches = url.split("/");
-			matches = matches.filter(m => m !== "")
-			if (matches.length > 1) {
-				//console.log(url,matches)
-				while (matches.length > 0) {
-					let m = matches.join('/');
-					let f = resolvedPermalinks.get(m);
-					if (f) {
-						f.push(filePathStem);
-						f = f.sort((a,b)=>a.length<b.length);
-						resolvedPermalinks.set(m,f);
-					}
-					else resolvedPermalinks.set(m,[filePathStem]);
-					matches = matches.slice(1)
-				}
-			} else {
-					resolvedPermalinks.set(url,[url])
-			}
-		})
-		const sortedOutput = new Map(alphaNumericSort([...resolvedPermalinks.entries()]));
-    return sortedOutput;
-  });
+	const COLLECTION_MOD = require("./_config/index").collections;
+	let allRendered;
 
-	eleventyConfig.addFilter('markdownifyWikiLinks',(content) => {
+	eleventyConfig.addCollection("linkablePages",(c)=>{
+		let output = COLLECTION_MOD.getAllRenderedContent(c);
+		allRendered = output;
+		return output;
+	})
+
+	eleventyConfig.addFilter('markdownifyWikiLinks',(content,pagePath="") => {
+		const {JSDOM} = jsdom;
+		const {window} = new JSDOM(`<!DOCTYPE html>\n<html>\n<body>\n${content}\n</body>\n</html>`);
+		const elements = window.document.querySelector("div")?.children;
 		const obsidianWikiLinkRegex = /(!)*\[\[([^\[\]\|\n\r]+)(\|[^\[\]\|\n\r]+)?\s?\]\]/g;
-		const matches = [...content.matchAll(obsidianWikiLinkRegex)]
+		const obsidianAttachmentType = new RegExp(`\.(${obsidianNonDefaultFiletypes.map(ft=>ft).join("|")}){1}`,"i");
+		const matches = [...content.matchAll(obsidianWikiLinkRegex)];
 		const links = [];
 		matches?.forEach(wikilink => {
 			const [match,embed,path,altText] = wikilink;
-			let index = wikilink.index
-			//console.log({match,embed,path,altText,index})
+			let index = wikilink.index;
 			let link = {
 				href:path.replace(/ /g,'%20'),
 				text:altText ? altText.substr(1) : path,
 				matchIndex:index,
 				matchLength:match.length,
-				class: embed ? 'embedded' : 'wikilink',
+				class: embed ? 'embedded-wikilink' : 'inline-wikilink',
 			}
-			let rg = `(${obsidianNonDefaultFiletypes.map(ft=>ft).join("|")})`
-			rg = new RegExp(`\.${rg}{1}`,"i")
-			link.type = link.href.match(rg)?.[1];
-			links.push(link)
-		})
+			function isURLtoAsset(url){return /\/{0,1}__assets\//.test(url)}
+			let P = "/"+link.href;
+			let isRendered = false; 
+			if (isURLtoAsset(P)) isRendered = true;
+			else {
+				P = P.replace(/%20/, "+")
+				if (P.substr(-6) == ("/index")) P = P.substr(0,P.length-5);
+				if (allRendered.has(P) || allRendered.has(P+"index")) isRendered = true;
+				else {
+					for ([k,v] of allRendered.entries()) {
+						P = P[0]=="/" ? P.substr(1) : P;
+						P = P.substr(-6) == "/index" ? P.substr(0,P.length-5) : P
+						if (k.substr(-1 * P.length) == P || k.substr(-1 * P.length)+"index" == P) {
+							isRendered = true
+							link.href = v.substr(1);
+							break;
+						}
+					}
+				}
+			}
+			link.isRendered = isRendered
+			link.type = link.href.match(obsidianAttachmentType)?.[1] || null;
+			links.push(link);
+		});
 		let offset=0;
+		if (links.length == 0) return content;
 		links?.forEach((link)=>{
-			let {href,text,matchIndex:idx,matchLength:ln,class:cl,type:t} = link;
+			let {isRendered,href,text,matchIndex:idx,matchLength:ln,class:cl,type:t} = link;
 			if (/\/index$/.test(text)) {
-				text = text.substr(0,text.length-6);
 				href = href.substr(0,href.length-5);
 			}
+			href = (t || href.substr(-1) == "/") ? href : href+".html"
 			if (text == "index" && href !== "index/") {
 				href = ""
 			}
 			let replacement = `<a href="${(t && !/^__assets\//.test(href)) ? '/__assets':''}/${t ? href : href.replace(/%20/g,'+')}" class="${cl}${t? ' '+t:''}">${text}</a>`;
-			if (href.includes("__") && !/^__assets/.test(href)) {
+			if (!isRendered) {
 				replacement = `<span class="private_content">[\[${text}]\]</span>`
 			}
-			content = content.substr(0,idx+offset)+replacement+content.substr(idx+ln+offset)
-			offset = ln > replacement.length ? offset + ln - replacement.length : offset + replacement.length - ln;
-		})
-		return content
+			let {content:c,offset:o} = replaceContent({content,toReplaceLength:ln,indexOf:idx,replacement,offset})
+			content = c;
+			offset = o;
+		});
+		return content;
 	})
+
+	function replaceContent ({content,toReplaceLength,indexOf,replacement,offset}) {
+		if (!content==undefined || toReplaceLength==undefined || indexOf==undefined || replacement==undefined || offset==undefined) return content;
+		content = content.substr(0,indexOf+offset)+replacement+content.substr(indexOf+toReplaceLength+offset);
+		offset = offset - (toReplaceLength - replacement.length)
+		//offset = toReplaceLength > replacement.length ? offset + toReplaceLength - replacement.length : offset + replacement.length - toReplaceLength;
+		return {content,offset}
+	}
 
 	/** 
 	 * Copy over any content from Obsidian that is not currently supported by 11ty
@@ -130,6 +121,12 @@ module.exports = (eleventyConfig) => {
       }
     }
   });
+
+
+	eleventyConfig.setFrontMatterParsingOptions({
+		excerpt: true,
+		excerpt_seperator: '<!-- endEleventyExcerpt -->'
+	})
 
 
 	return {
